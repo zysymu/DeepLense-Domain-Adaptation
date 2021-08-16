@@ -10,14 +10,14 @@ class Adamatch(Supervised):
     def __init__(self, encoder, classifier, device):
         super().__init__(encoder, classifier, device)
 
-    def train_target(self, source_dataloader_weak, source_dataloader_strong,
-                     target_dataloader_weak, target_dataloader_strong, target_dataloader_test,
-                     epochs, hyperparams, save_path):
+    def train(self, source_dataloader_weak, source_dataloader_strong,
+              target_dataloader_weak, target_dataloader_strong, target_dataloader_test,
+              epochs, hyperparams, save_path):
         # configure hyperparameters
         lr = hyperparams['learning_rate']
         wd = hyperparams['weight_decay']
         cyclic_scheduler = hyperparams['cyclic_scheduler']
-        tau = 0.9
+        tau = hyperparams['tau']
         
         iters = max(len(source_dataloader_weak), len(source_dataloader_strong), len(target_dataloader_weak), len(target_dataloader_strong))
 
