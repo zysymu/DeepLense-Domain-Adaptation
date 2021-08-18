@@ -11,7 +11,7 @@ class Supervised(object):
     def __init__(self, encoder, classifier, device):
         self.encoder = encoder.to(device)
         self.classifier = classifier.to(device)
-        self.device = device.to(device)
+        self.device = device
 
     def train(self, dataloader, dataloader_test, epochs, hyperparams, save_path):
         # configure hyperparameters
@@ -28,7 +28,7 @@ class Supervised(object):
         # early stopping variables
         start_epoch = 0
         best_acc = 0.0
-        patience = hyperparams['patience']
+        patience = 15
         bad_epochs = 0
 
         # metrics
@@ -68,8 +68,8 @@ class Supervised(object):
             self.history['loss'].append(epoch_loss)
 
             # evaluate on training data (source domain)
-            epoch_accuracy = self.evaluate(self.encoder, self.classifier, dataloader)
-            test_epoch_accuracy = self.evaluate(self.encoder, self.classifier, dataloader_test)
+            epoch_accuracy = self.evaluate( dataloader)
+            test_epoch_accuracy = self.evaluate(dataloader_test)
             self.history['accuracy'].append(epoch_accuracy)
             
             # save checkpoint

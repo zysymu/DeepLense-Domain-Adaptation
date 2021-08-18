@@ -29,7 +29,7 @@ def get_dataloader(data_path, labels_path, augmentations, bs, three_channels=Fal
     # create dataset
     dataset = NumpyDataset(data_path, labels_path, augmentations, three_channels)
     
-    # source dataloader
+    # create dataloader
     dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bs, num_workers=num_workers)
     
     return dataloader

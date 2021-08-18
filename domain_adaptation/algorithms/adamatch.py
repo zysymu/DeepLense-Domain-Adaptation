@@ -34,7 +34,7 @@ class Adamatch(Supervised):
         # early stopping variables
         start_epoch = 0
         best_acc = 0.0
-        patience = hyperparams['patience']
+        patience = 15
         bad_epochs = 0
 
         self.history = {'epoch_loss': [], 'accuracy_source': [], 'accuracy_target': []}
@@ -138,9 +138,9 @@ class Adamatch(Supervised):
             self.history['epoch_loss'].append(epoch_loss)
 
             # self.evaluate on testing data (target domain)
-            epoch_accuracy_source = self.evaluate(self.encoder, self.classifier, source_dataloader_weak)
-            epoch_accuracy_target = self.evaluate(self.encoder, self.classifier, target_dataloader_weak)
-            test_epoch_accuracy = self.evaluate(self.encoder, self.classifier, target_dataloader_test)
+            epoch_accuracy_source = self.evaluate(source_dataloader_weak)
+            epoch_accuracy_target = self.evaluate(target_dataloader_weak)
+            test_epoch_accuracy = self.evaluate(target_dataloader_test)
             
             self.history['accuracy_source'].append(epoch_accuracy_source)
             self.history['accuracy_target'].append(epoch_accuracy_target)

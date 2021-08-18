@@ -2,9 +2,19 @@ from supervised import Supervised
 import torch
 from torch import nn
 import torch.nn.functional as F
-import numpy as np
 import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from torchvision.models import resnet18
+import numpy as np
+import os
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+import seaborn as sns
+from scipy.spatial.distance import cdist # cosine distance
+from torch.autograd import grad
 
 class Cgdm(Supervised):
     def __init__(self, encoder, classifier, device):
@@ -184,42 +194,132 @@ class Cgdm(Supervised):
         plt.show()
 
     @staticmethod
-    def _disable_batchnorm_tracking(model):
-        def fn(module):
-            if isinstance(module, nn.modules.batchnorm._BatchNorm):
-                module.track_running_stats = False
+    def _weighted_crossentropy(input, target):
+        input_softmax = F.softmax(input, dim=1)
+        entropy = -input_softmax * torch.log(input_softmax + 1e-5) # standard info entropy with "anti-zero" term
+        entropy = torch.sum(entropy, dim=1)
 
-        model.apply(fn)
+        weight = 1.0 + torch.exp(-entropy)
+        weight = weight / torch.sum(weight).detach().item()
 
-    @staticmethod
-    def _enable_batchnorm_tracking(model):
-        def fn(module):
-            if isinstance(module, nn.modules.batchnorm._BatchNorm):
-                module.track_running_stats = True
-
-        model.apply(fn)
+        return torch.mean(weight * F.cross_entropy(input, target, reduction='none'))
 
     @staticmethod
-    def _compute_source_loss(logits_weak, logits_strong, labels):
-        """
-        Receives logits as input (dense layer outputs with no activation function)
-        """
-        loss_function = nn.CrossEntropyLoss() # default: `reduction="mean"`
-        weak_loss = loss_function(logits_weak, labels)
-        strong_loss = loss_function(logits_strong, labels)
-
-        #return weak_loss + strong_loss
-        return (weak_loss + strong_loss) / 2
-
-    @staticmethod
-    def _compute_target_loss(pseudolabels, logits_strong, mask):
-        """
-        Receives logits as input (dense layer outputs with no activation function).
-        `pseudolabels` are treated as ground truth (standard SSL practice).
-        """
-        loss_function = nn.CrossEntropyLoss(reduction="none")
-        pseudolabels = pseudolabels.detach() # remove from backpropagation
-
-        loss = loss_function(logits_strong, pseudolabels)
+    def _entropy(input, epsilon=1e-5):
+        # apply softmax
+        input = F.softmax(input, dim=1)
         
-        return (loss * mask).mean()
+        # entropy_condition
+        entropy_condition = -input * torch.log(input + epsilon)
+        entropy_condition = torch.sum(entropy_condition, dim=1).mean()
+        
+        # entropy_div
+        input = torch.mean(input, 0) + epsilon
+        entropy_div = input * torch.log(input)
+        entropy_div = torch.sum(entropy_div)
+
+        return entropy_condition + entropy_div
+
+    @staticmethod
+    def _discrepancy(input_1, input_2):
+        return torch.mean(torch.abs(F.softmax(input_1, dim=1) - F.softmax(input_2, dim=1)))
+
+    @staticmethod
+    def _gradient_discrepancy(source_pack, target_pack, generator, classifier_1, classifier_2):
+        outputs_1_source, outputs_2_source, labels_source = source_pack
+        outputs_1_target, outputs_2_target, labels_target = target_pack
+
+        criterion = nn.CrossEntropyLoss()
+        criterion_weighted = weighted_crossentropy
+
+        gradient_loss = 0
+
+        # get losses
+        loss_1_source = criterion(outputs_1_source, labels_source)
+        loss_2_source = criterion(outputs_2_source, labels_source)
+        losses_source = [loss_1_source, loss_2_source]
+
+        loss_1_target = criterion_weighted(outputs_1_target, labels_target)
+        loss_2_target = criterion_weighted(outputs_2_target, labels_target)
+        losses_target = [loss_1_target, loss_2_target]
+
+        # get gradient loss from each classifier
+        for classifier, loss_source, loss_target in zip([classifier_1, classifier_2], losses_source, losses_target):
+            grad_cosine_similarity = []
+            
+            for name, params in classifier.named_parameters():
+                real_grad = grad([loss_source], [params], create_graph=True, only_inputs=True, allow_unused=False)[0]
+                fake_grad = grad([loss_target], [params], create_graph=True, only_inputs=True, allow_unused=False)[0]
+
+                if len(params.shape) > 1:
+                    cosine_similarity = F.cosine_similarity(fake_grad, real_grad, dim=1).mean()
+                else:
+                    cosine_similarity = F.cosine_similarity(fake_grad, real_grad, dim=0)
+
+                grad_cosine_similarity.append(cosine_similarity)
+
+            # concatenate cosine similarities
+            grad_cosine_similarity = torch.stack(grad_cosine_similarity)
+
+            # get loss for this classifier
+            gradient_loss += (1.0 - grad_cosine_similarity).mean()
+
+        return gradient_loss/2.0 # mean of both gradient_loss(es)
+
+    @staticmethod
+    def _get_pseudo_labels(target_dataloader, generator, classifier_1, classifier_2):
+        generator.eval()
+        classifier_1.eval()
+        classifier_2.eval()
+
+        start_test = True
+
+        with torch.no_grad():
+            for data, labels in target_dataloader:
+                data = data.to(device)
+                labels = labels.to(device)
+
+                # generate features
+                features = generator(data)
+
+                outputs_1 = classifier_1(features)
+                outputs_2 = classifier_2(features)
+                outputs = outputs_1 + outputs_2
+
+                if start_test:
+                    all_features = features.float().cpu()
+                    all_outputs = outputs.float().cpu()
+                    all_labels = labels.float().cpu()
+                    start_test = False
+                
+                else:
+                    all_features = torch.cat((all_features, features.float().cpu()), dim=0)
+                    all_outputs = torch.cat((all_outputs, outputs.float().cpu()), dim=0)
+                    all_labels = torch.cat((all_labels, labels.float().cpu()), dim=0)
+
+        all_outputs = F.softmax(all_outputs, dim=1)
+        _, preds = torch.max(all_outputs, dim=1)
+        accuracy = torch.sum(torch.squeeze(preds).float() == all_labels).item() / float(all_labels.size()[0])
+
+        all_features = torch.cat((all_features, torch.ones(all_features.size(0), 1)), dim=1)
+        all_features = (all_features.t() / torch.norm(all_features, p=2, dim=1)).t()
+        all_features = all_features.float().cpu().numpy()
+
+        # perform k-means clustering
+        k = all_outputs.size(1)
+
+        for i in range(2):
+            if i == 0:
+                aff = all_outputs.float().cpu().numpy()
+            else:
+                aff = np.eye(k)[preds_label]
+            
+            initial_centroid = aff.transpose().dot(all_features)
+            initial_centroid = initial_centroid / (1e-8 + aff.sum(axis=0)[:,None])
+            distance = cdist(all_features, initial_centroid, 'cosine')
+
+            preds_label = distance.argmin(axis=1)
+            accuracy_kmeans = np.sum(preds_label == all_labels.float().cpu().numpy()) / len(all_features)
+
+        print('Only source accuracy = {:.2f}% -> After the clustering = {:.2f}%'.format(accuracy*100, accuracy_kmeans*100))
+        return torch.tensor(preds_label, dtype=torch.long)

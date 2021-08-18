@@ -46,7 +46,7 @@ class Adda(Supervised):
         # early stopping variables
         start_epoch = 0
         best_acc = 0.0
-        patience = hyperparams['patience']
+        patience = 15
         bad_epochs = 0
 
         self.history = {'loss_discriminator': [], 'loss_target_encoder': [], 'accuracy': []}
@@ -133,8 +133,8 @@ class Adda(Supervised):
             self.history['loss_self.encoder'].append(epoch_loss_target)
 
             # self.evaluate on testing data (target domain)
-            epoch_accuracy = self.evaluate(self.encoder, self.classifier, target_dataloader)
-            test_epoch_accuracy = self.evaluate(self.encoder, self.classifier, target_dataloader_test)
+            epoch_accuracy = self.evaluate(target_dataloader)
+            test_epoch_accuracy = self.evaluate(target_dataloader_test)
             self.history['accuracy'].append(epoch_accuracy)
 
             # save checkpoint
