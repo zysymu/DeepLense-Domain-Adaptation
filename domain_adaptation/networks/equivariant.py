@@ -4,6 +4,21 @@ from e2cnn import e2nn
 
 class EquivariantNetworkEncoder(nn.Module):
     def __init__(self, features_size=256, sym_group='Dihyderal', N=2):
+        """
+        Equivariant neural network receives that images and encodes them into an array of size `features_size`.
+
+        Arguments:
+        ----------
+        features_size: int
+            Size of encoded features array.
+
+        sym_group: str ['Dihyderal', 'Circular']
+            Kind of symmetry group to consider.
+
+        N: int
+            Number of discrete rotations (integer greater than 1) or -1 for continuous rotations.
+        """
+
         super(EquivariantNetworkEncoder, self).__init__()
 
         if sym_group == 'Dihyderal':
@@ -97,7 +112,19 @@ class EquivariantNetworkEncoder(nn.Module):
         return x
 
 class Classifier(nn.Module):
-    def __init__(self, features_size=256, num_classes=3):
+    def __init__(self, features_size=256, num_classes=3):        
+        """
+        ResNet based neural network that receives an array of size `features_size` and classifies it into `num_classes` classes.
+
+        Arguments:
+        ----------
+        features_size: int
+            Size of encoded features array.
+
+        num_classes: int
+            Number of classes to classify the encoded array into.
+        """
+
         super(Classifier, self).__init__()
         self.fc = nn.Linear(features_size, num_classes)
 

@@ -7,12 +7,67 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 class Adamatch(Supervised):
-    def __init__(self, encoder, classifier, device):
-        super().__init__(encoder, classifier, device)
+    """
+    Paper: AdaMatch: A Unified Approach to Semi-Supervised Learning and Domain Adaptation
+    Authors: David Berthelot, Rebecca Roelofs, Kihyuk Sohn, Nicholas Carlini, Alex Kurakin
+    """
+
+    def __init__(self, encoder, classifier):
+        """
+        Arguments:
+        ----------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+        """
+
+        super().__init__(encoder, classifier)
 
     def train(self, source_dataloader_weak, source_dataloader_strong,
               target_dataloader_weak, target_dataloader_strong, target_dataloader_test,
               epochs, hyperparams, save_path):
+        """
+        Trains the model (encoder + classifier).
+
+        Arguments:
+        ----------
+        source_dataloader_weak: PyTorch DataLoader
+            DataLoader with source domain training data with weak augmentations.
+
+        source_dataloader_strong: PyTorch DataLoader
+            DataLoader with source domain training data with strong augmentations.
+
+        target_dataloader_weak: PyTorch DataLoader
+            DataLoader with target domain training data with weak augmentations.
+            THIS DATALOADER'S BATCH SIZE MUST BE 3 * SOURCE_DATALOADER_BATCH_SIZE.
+
+        target_dataloader_strong: PyTorch DataLoader
+            DataLoader with target domain training data with strong augmentations.
+            THIS DATALOADER'S BATCH SIZE MUST BE 3 * SOURCE_DATALOADER_BATCH_SIZE. 
+
+        target_dataloader_test: PyTorch DataLoader
+            DataLoader with target domain validation data, used for early stopping.
+
+        epochs: int
+            Amount of epochs to train the model for.
+
+        hyperparams: dict
+            Dictionary containing hyperparameters for this algorithm. Check `data/hyperparams.py`.
+
+        save_path: str
+            Path to store model weights.
+
+        Returns:
+        --------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+        """
+
         # configure hyperparameters
         lr = hyperparams['learning_rate']
         wd = hyperparams['weight_decay']
@@ -133,7 +188,6 @@ class Adamatch(Supervised):
                 running_loss += loss.item()
 
             # get losses
-            # we use np.min because zip only goes up to the smallest list length
             epoch_loss = running_loss / iters
             self.history['epoch_loss'].append(epoch_loss)
 
@@ -149,7 +203,7 @@ class Adamatch(Supervised):
             if test_epoch_accuracy > best_acc:
                 torch.save({'encoder_weights': self.encoder.state_dict(),
                             'classifier_weights': self.classifier.state_dict()
-                        }, save_path)
+                            }, save_path)
                 best_acc = test_epoch_accuracy
                 bad_epochs = 0
                 
@@ -166,9 +220,13 @@ class Adamatch(Supervised):
         self.encoder.load_state_dict(best['encoder_weights'])
         self.classifier.load_state_dict(best['classifier_weights'])
         
-        return self.encoder, self.classifier, self.history
+        return self.encoder, self.classifier
 
     def plot_metrics(self):
+        """
+        Plots the training metrics (only usable after calling .train()).
+        """
+
         # plot metrics for losses n stuff
         fig, axs = plt.subplots(1, 3, figsize=(18,5), dpi=200)
 

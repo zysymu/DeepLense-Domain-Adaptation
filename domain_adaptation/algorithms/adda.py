@@ -6,8 +6,27 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 class Adda(Supervised):
-    def __init__(self, encoder, classifier, discriminator, device):
-        super().__init__(encoder, classifier, device)
+    """
+    Paper: Adversarial Discriminative Domain Adaptation
+    Authors: Eric Tzeng, Judy Hoffman, Kate Saenko, Trevor Darrell
+    """
+
+    def __init__(self, encoder, classifier, discriminator):
+        """
+        Arguments:
+        ----------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+
+        discriminator: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into 2 classes.
+            It discriminates between encodings of the source domain and the target domain.
+        """
+
+        super().__init__(encoder, classifier)
 
         self.discriminator = discriminator.to(self.device)
 
@@ -22,7 +41,39 @@ class Adda(Supervised):
         for param in self.classifier.parameters():
             param.requires_grad = False
 
-    def train_target(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path):
+    def train(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path):
+        """
+        Trains the model (encoder + classifier) and discriminator.
+
+        Arguments:
+        ----------
+        source_dataloader: PyTorch DataLoader
+            DataLoader with source domain training data.
+
+        target_dataloader: PyTorch DataLoader
+            DataLoader with target domain training data.
+
+        target_dataloader_test: PyTorch DataLoader
+            DataLoader with target domain validation data, used for early stopping.
+
+        epochs: int
+            Amount of epochs to train the model for.
+
+        hyperparams: dict
+            Dictionary containing hyperparameters for this algorithm. Check `data/hyperparams.py`.
+
+        save_path: str
+            Path to store model weights.
+
+        Returns:
+        --------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+        """
+        
         # configure hyperparameters
         criterion = nn.CrossEntropyLoss()
         lr_target = hyperparams['learning_rate_target']
@@ -126,11 +177,10 @@ class Adda(Supervised):
                     scheduler_discriminator.step()
 
             # get losses
-            # we use np.min because zip only goes up to the smallest list length
             epoch_loss_discriminator = running_loss_discriminator / iters
             epoch_loss_target = running_loss_target / iters
-            self.history['loss_self.discriminator'].append(epoch_loss_discriminator)
-            self.history['loss_self.encoder'].append(epoch_loss_target)
+            self.history['loss_discriminator'].append(epoch_loss_discriminator)
+            self.history['loss_encoder'].append(epoch_loss_target)
 
             # self.evaluate on testing data (target domain)
             epoch_accuracy = self.evaluate(target_dataloader)
@@ -158,9 +208,13 @@ class Adda(Supervised):
         self.encoder.load_state_dict(best['encoder_weights'])
         self.classifier.load_state_dict(best['classifier_weights'])
         
-        return self.encoder, self.classifier, self.history
+        return self.encoder, self.classifier
 
     def plot_metrics(self):
+        """
+        Plots the training metrics (only usable after calling .train()).
+        """
+
         # plot metrics from target
         fig, axs = plt.subplots(1, 3, figsize=(18,5), dpi=200)
 

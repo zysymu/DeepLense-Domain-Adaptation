@@ -2,10 +2,20 @@ from torch import nn
 import torch.nn.functional as F
 
 class DeepMergeEncoder(nn.Module):
-    '''
-    CNN from Ciprijanovic et al. (2020) Astronomy and Comupting, 32, 100390
-    '''
+    """
+    CNN from Ciprijanovic et al. (2020) Astronomy and Computing, 32, 100390
+    """
+
     def __init__(self, features_size=32*18*18):
+        """
+        Convolutional neural network receives images and encodes them into an array of size `features_size`.
+
+        Arguments:
+        ----------
+        features_size: int
+            Size of encoded features array.
+        """
+
         super(DeepMergeEncoder, self).__init__()
 
         self.features_size = features_size
@@ -27,10 +37,23 @@ class DeepMergeEncoder(nn.Module):
         return x
 
 class DeepMergeClassifier(nn.Module):
-    '''
-    CNN from Ciprijanovic et al. (2020) Astronomy and Comupting, 32, 100390
-    '''
+    """
+    CNN from Ciprijanovic et al. (2020) Astronomy and Computing, 32, 100390
+    """
+
     def __init__(self, features_size=32*18*18, num_classes=3):
+        """
+        Neural network that receives an array of size `features_size` and classifies it into `num_classes` classes.
+
+        Arguments:
+        ----------
+        features_size: int
+            Size of encoded features array.
+
+        num_classes: int
+            Number of classes to classify the encoded array into.
+        """
+
         super(DeepMergeClassifier, self).__init__()
 
         self.fc1 = nn.Linear(features_size, 256)

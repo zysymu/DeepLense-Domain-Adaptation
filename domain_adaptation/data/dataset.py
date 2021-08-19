@@ -2,8 +2,26 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
-class NumpyDataset(Dataset):    
+class NumpyDataset(Dataset):
     def __init__(self, data_path, labels_path, transform, three_channels=False):
+        """
+        Loads image NumPy arrays and labels NumPy arrays and applies transforms to them in a memory-efficient manner.
+
+        Arguments:
+        ----------
+        data_path: str
+            Path to image data of shape [number_of_images, 1, height, width].
+
+        labels_path: str
+            Path to label data of shape [number_of_labels, 1].
+
+        transform: Torchvision transforms
+            Augmentations to be applied on the data.
+
+        three_channels: bool
+            If True the one-channel image is copied over the other channels, creating a three-channel image.
+        """
+
         self.data = np.load(data_path, mmap_mode='r')
         self.labels = np.load(labels_path, mmap_mode='r')
 
@@ -25,7 +43,35 @@ class NumpyDataset(Dataset):
 
         return data, label
 
-def get_dataloader(data_path, labels_path, augmentations, bs, three_channels=False, num_workers=2, shuffle=False):
+def get_dataloader(data_path, labels_path, augmentations, three_channels=False, bs=100, num_workers=2, shuffle=False):
+    """
+    Creates PyTorch DataLoaders that load image NumPy arrays and labels NumPy arrays and applies transforms to them in a memory-efficient manner.
+
+    Arguments:
+    ----------
+    data_path: str
+        Path to image data of shape [number_of_images, 1, height, width].
+
+    labels_path: str
+        Path to label data of shape [number_of_labels, 1].
+
+    transform: Torchvision transforms
+        Augmentations to be applied on the data.
+
+    three_channels: bool
+        If True the one-channel image is copied over the other channels, creating a three-channel image.
+
+    bs: int
+        Batch size for loading the data.
+
+    num_workers: int
+        Number of workers to be used (a number too high may slow down loading).
+
+    shuffle: bool
+        If True shuffles the data in the DataLoader.
+        Some algorithms (Self-Ensemble & AdaMatch) require different DataLoaders that are not shuffled between one another!
+    """
+
     # create dataset
     dataset = NumpyDataset(data_path, labels_path, augmentations, three_channels)
     

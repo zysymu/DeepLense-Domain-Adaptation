@@ -8,12 +8,51 @@ import sklearn.metrics
 import seaborn as sns
 
 class Supervised(object):
-    def __init__(self, encoder, classifier, device):
-        self.encoder = encoder.to(device)
-        self.classifier = classifier.to(device)
-        self.device = device
+    def __init__(self, encoder, classifier):
+        """
+        Arguments:
+        ----------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+        """
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.encoder = encoder.to(self.device)
+        self.classifier = classifier.to(self.device)
 
     def train(self, dataloader, dataloader_test, epochs, hyperparams, save_path):
+        """
+        Trains the model (encoder + classifier).
+
+        Arguments:
+        ----------
+        dataloader: PyTorch DataLoader
+            DataLoader with training data.
+
+        dataloader_test: PyTorch DataLoader
+            DataLoader with validation data, used for early stopping.
+
+        epochs: int
+            Amount of epochs to train the model for.
+
+        hyperparams: dict
+            Dictionary containing hyperparameters for this algorithm. Check `data/hyperparams.py`.
+
+        save_path: str
+            Path to store model weights.
+
+        Returns:
+        --------
+        encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+
+        classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+        """
+        
         # configure hyperparameters
         criterion = nn.CrossEntropyLoss()
         lr = hyperparams['learning_rate']
@@ -93,9 +132,27 @@ class Supervised(object):
         self.encoder.load_state_dict(best['encoder_weights'])
         self.classifier.load_state_dict(best['classifier_weights'])
         
-        return self.encoder, self.classifier, self.history
+        return self.encoder, self.classifier
 
     def evaluate(self, dataloader, return_lists_roc=False):
+        """
+        Evaluates model on `dataloader`.
+
+        Arguments:
+        ----------
+        dataloader: PyTorch DataLoader
+            DataLoader with test data.
+
+        return_lists_roc: bool
+            If True returns also list of labels, a list of outputs and a list of predictions.
+            Useful for some metrics.
+
+        Returns:
+        --------
+        accuracy: float
+            Accuracy achieved over `dataloader`.
+        """
+
         # set network to evaluation mode
         self.encoder.eval()
         self.classifier.eval()
@@ -137,6 +194,10 @@ class Supervised(object):
         return accuracy
 
     def plot_metrics(self):
+        """
+        Plots the training metrics (only usable after calling .train()).
+        """
+
         # plot metrics from source
         fig, axs = plt.subplots(1, 2, figsize=(12,5), dpi=200)
 
@@ -155,6 +216,18 @@ class Supervised(object):
         plt.show()
 
     def plot_cm_roc(self, dataloader, n_classes=3):
+        """
+        Plots the confusion matrix and ROC curves of the model on `dataloader`.
+
+        Arguments:
+        ----------
+        dataloader: PyTorch DataLoader
+            DataLoader with test data.
+
+        n_classes: int
+            Number of classes.
+        """
+
         cmap = sns.diverging_palette(220, 20, as_cmap=True)
 
         self.encoder.eval()
