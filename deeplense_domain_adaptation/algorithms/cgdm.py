@@ -107,7 +107,7 @@ class Cgdm(Supervised):
 
             # this is where the unsupervised learning comes in, as such, we're not interested in labels
             for i, ((data_source, labels_source), (data_target, _)) in enumerate(zip(source_dataloader, target_dataloader)):
-                if epoch > start_epoch or i % pseudo_interval == 0:
+                if epoch > start_epoch and i % pseudo_interval == 0:
                     pseudo_labels_target = self._get_pseudo_labels(target_dataloader)
 
                 # set network to training mode
@@ -179,10 +179,9 @@ class Cgdm(Supervised):
                             # train self.encoder to minimize divergence between classifier outputs with gradient similarity
                             discrepancy_loss = self._discrepancy(outputs1_target, outputs2_target)
 
-                            source_pack = (outputs1_source, outputs2_source, labels_source)
-                            target_pack = (outputs1_target, outputs2_target, labels_target)
-
                             if epoch > start_epoch:
+                                source_pack = (outputs1_source, outputs2_source, labels_source)
+                                target_pack = (outputs1_target, outputs2_target, labels_target)
                                 gradient_discrepancy_loss = self._gradient_discrepancy(source_pack, target_pack)
                             else:
                                 gradient_discrepancy_loss = 0
@@ -235,7 +234,7 @@ class Cgdm(Supervised):
                 bad_epochs += 1
 
             print('[Epoch {}/{}] entropy loss: {:.6f}; classifier 1 loss: {:.6f}; classifier 2 loss: {:.6f}; discrepancy loss: {:.6f}'.format(epoch+1, epochs, epoch_loss_entropy, epoch_loss_classifier1, epoch_loss_classifier2, epoch_loss_discrepancy))
-            print('[Epoch {}/{}] accuracy source: {:.6f}; accuracy target: {:.6f};'.format(epoch+1, epochs, epoch_accuracy_source, epoch_accuracy_target))
+            print('[Epoch {}/{}] accuracy source: {:.6f}; accuracy target: {:.6f}; val accuracy: {:.6f};'.format(epoch+1, epochs, epoch_accuracy_source, epoch_accuracy_target, test_epoch_accuracy))
 
             if bad_epochs >= patience:
                 print(f"reached {bad_epochs} bad epochs, stopping training with best val accuracy of {best_acc}!")

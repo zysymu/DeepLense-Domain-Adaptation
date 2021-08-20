@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="deeplense_domain_adaptation",
-    version="0.0.3",
+    version="0.0.5",
     author="Marcos Tidball",
     author_email="marcostidball@gmail.com",
     description="A PyTorch-based collection of Unsupervised Domain Adaptation methods applied to strong gravitational lenses",
@@ -31,7 +31,7 @@ setuptools.setup(
                       "e2cnn==0.1.9",
                       "torchvision==0.10.0",
                       "matplotlib==3.4.3",
-                      "sklearn==0.24.2",
+                      "scikit-learn==0.24.2",
                       "scipy==1.7.1",
                       "seaborn==0.11.2"],
     python_requires=">=3.7.10",

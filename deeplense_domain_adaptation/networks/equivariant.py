@@ -1,11 +1,12 @@
 from torch import nn
 from e2cnn import gspaces
-from e2cnn import e2nn
+import e2cnn.nn as e2nn
 
 class Encoder(nn.Module):
     def __init__(self, features_size=256, sym_group='Dihyderal', N=2):
         """
         Equivariant neural network receives that images and encodes them into an array of size `features_size`.
+        NEED TO DOWNGRADE VERSIONS: !pip install torch==1.4 torchvision==0.5
 
         Arguments:
         ----------

@@ -100,7 +100,7 @@ class Adda(Supervised):
         patience = 15
         bad_epochs = 0
 
-        self.history = {'loss_discriminator': [], 'loss_target_encoder': [], 'accuracy': []}
+        self.history = {'loss_discriminator': [], 'loss_encoder': [], 'accuracy': []}
 
         # training loop
         for epoch in range(start_epoch, epochs):
@@ -161,15 +161,15 @@ class Adda(Supervised):
                 ## get loss for target encoder
                 #label_target = Variable(torch.zeros(batch_size_target, dtype=torch.long)).to(self.device)
                 label_target = torch.tensor([0] * batch_size_target, dtype=torch.long).to(self.device)
-                loss_target_encoder = criterion(outputs_target, label_target)
+                loss_encoder = criterion(outputs_target, label_target)
                 
                 ## backpropagate and update weights
-                loss_target_encoder.backward()
+                loss_encoder.backward()
                 optimizer_target.step()
 
                 # metrics
                 running_loss_discriminator += loss_discriminator.item()
-                running_loss_target += loss_target_encoder.item()
+                running_loss_target += loss_encoder.item()
                 
                 # scheduler step
                 if cyclic_scheduler:
@@ -225,7 +225,7 @@ class Adda(Supervised):
         axs[0].set_ylabel('Loss')
         axs[0].set_title('Target discriminator loss')
 
-        axs[2].plot(range(1, epochs+1), self.history['loss_target_encoder'])
+        axs[2].plot(range(1, epochs+1), self.history['loss_encoder'])
         axs[2].set_xlabel('Epochs')
         axs[2].set_ylabel('Loss')
         axs[2].set_title('Target encoder loss')      

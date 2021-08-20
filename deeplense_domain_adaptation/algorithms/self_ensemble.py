@@ -2,6 +2,7 @@ from supervised import Supervised
 import torch
 from torch import nn
 import torch.optim as optim
+import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
@@ -32,10 +33,10 @@ class SelfEnsemble(Supervised):
         #self.teacher_classifier = self.classifier
 
         # disable grad in teacher network
-        for param in self.encoder.parameters():
-            param.requires_grad = False
-        for param in self.classifier.parameters():
-            param.requires_grad = False
+        #for param in self.encoder.parameters():
+        #    param.requires_grad = False
+        #for param in self.classifier.parameters():
+        #    param.requires_grad = False
 
     def train(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path, n_classes=3):
         """
@@ -101,9 +102,9 @@ class SelfEnsemble(Supervised):
         self.history = {'supervised_loss': [],
                         'unsupervised_loss': [],
                         'unsupervised_mask_count': [],
-                        'student_accuracy_source': [],
+                        #'student_accuracy_source': [],
                         'teacher_accuracy_source': [],
-                        'student_accuracy_target': [],
+                        #'student_accuracy_target': [],
                         'teacher_accuracy_target': []
                         }
 
@@ -244,26 +245,26 @@ class SelfEnsemble(Supervised):
 
         fig, axs = plt.subplots(1, 2, figsize=(12,5), dpi=200)
 
-        axs[0].plot(range(1, epochs+1), self.history['student_accuracy_source'], label='Student')
-        axs[0].set_xlabel('Epochs')
-        axs[0].set_ylabel('Accuracy')
+        #axs[0].plot(range(1, epochs+1), self.history['student_accuracy_source'], label='Student')
+        #axs[0].set_xlabel('Epochs')
+        #axs[0].set_ylabel('Accuracy')
 
         axs[0].plot(range(1, epochs+1), self.history['teacher_accuracy_source'], label='Teacher')
         axs[0].set_xlabel('Epochs')
         axs[0].set_ylabel('Accuracy')
         axs[0].set_title('Accuracy on source')
 
-        axs[1].plot(range(1, epochs+1), self.history['student_accuracy_target'], label='Student')
-        axs[1].set_xlabel('Epochs')
-        axs[1].set_ylabel('Accuracy')
+        #axs[1].plot(range(1, epochs+1), self.history['student_accuracy_target'], label='Student')
+        #axs[1].set_xlabel('Epochs')
+        #axs[1].set_ylabel('Accuracy')
 
         axs[1].plot(range(1, epochs+1), self.history['teacher_accuracy_target'], label='Teacher')
         axs[1].set_xlabel('Epochs')
         axs[1].set_ylabel('Accuracy')
         axs[1].set_title('Accuracy on target')
 
-        axs[0].legend()
-        axs[1].legend()
+        #axs[0].legend()
+        #axs[1].legend()
 
         plt.show()
 
@@ -284,13 +285,20 @@ class SelfEnsemble(Supervised):
             self.target_params = target_encoder_params + target_classifier_params
 
             for tgt_p, src_p in zip(self.target_params, self.source_params):
-                tgt_p[:] = src_p[:] 
+                try:
+                    tgt_p[:] = src_p[:] 
+                except IndexError as e:
+                    tgt_p = src_p 
 
         def step(self):
             one_minus_alpha = 1.0 - self.alpha
             for tgt_p, src_p in zip(self.target_params, self.source_params):
-                tgt_p.mul_(self.alpha)
-                tgt_p.add_(src_p * one_minus_alpha)
+                try:
+                    tgt_p.mul_(self.alpha)
+                    tgt_p.add_(src_p * one_minus_alpha)
+                except RuntimeError as e:
+                    tgt_p.mul_(int(self.alpha))
+                    tgt_p.add_((src_p * one_minus_alpha).long())
 
     @staticmethod
     def _augmentation_loss(student_output, teacher_output, confidence_thresh=0.96837722, class_balance=0.005, n_classes=3):
@@ -310,7 +318,7 @@ class SelfEnsemble(Supervised):
             # robust_binary_crossentropy
             inv_tgt = -avg_class_prob + 1.0
             inv_pred = -float(1.0/n_classes) + 1.0 + 1e-6
-            equalize_class_loss = -(avg_class_prob * torch.log(float(1.0/n_classes) + 1.0e-6) + inv_tgt * torch.log(inv_pred))
+            equalize_class_loss = -(avg_class_prob * np.log(float(1.0/n_classes) + 1.0e-6) + inv_tgt * np.log(inv_pred))
 
             equalize_class_loss = equalize_class_loss.mean() * n_classes
             equalize_class_loss = equalize_class_loss * confidence_mask.mean(dim=0)
