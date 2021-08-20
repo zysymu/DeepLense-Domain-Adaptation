@@ -1,7 +1,7 @@
 from torch import nn
 from torchvision.models import resnet18, resnet50#, wide_resnet50_2
 
-class ResnetEncoder(nn.Module):
+class Encoder(nn.Module):
     def __init__(self, resnet, three_channels=False, pretrained=False, features_size=256):
         """
         ResNet based neural network that receives images and encodes them into an array of size `features_size`.
@@ -21,7 +21,7 @@ class ResnetEncoder(nn.Module):
             Size of encoded features array.
         """
 
-        super(ResnetEncoder, self).__init__()
+        super(Encoder, self).__init__()
         
         if resnet == '18':
             self.resnet = resnet18(pretrained=pretrained)
@@ -41,7 +41,7 @@ class ResnetEncoder(nn.Module):
         x = self.resnet(x)
         return x
 
-class ResnetClassifier(nn.Module):
+class Classifier(nn.Module):
     def __init__(self, features_size=256, num_classes=3):
         """
         Neural network that receives an array of size `features_size` and classifies it into `num_classes` classes.
@@ -55,7 +55,7 @@ class ResnetClassifier(nn.Module):
             Number of classes to classify the encoded array into.
         """
 
-        super(ResnetClassifier, self).__init__()
+        super(Classifier, self).__init__()
         self.fc = nn.Linear(features_size, num_classes)
 
     def forward(self, x):

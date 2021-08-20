@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 
-class DeepMergeEncoder(nn.Module):
+class Encoder(nn.Module):
     """
     CNN from Ciprijanovic et al. (2020) Astronomy and Computing, 32, 100390
     """
@@ -16,7 +16,7 @@ class DeepMergeEncoder(nn.Module):
             Size of encoded features array.
         """
 
-        super(DeepMergeEncoder, self).__init__()
+        super(Encoder, self).__init__()
 
         self.features_size = features_size
 
@@ -36,7 +36,7 @@ class DeepMergeEncoder(nn.Module):
         x = x.view(-1, self.features_size)
         return x
 
-class DeepMergeClassifier(nn.Module):
+class Classifier(nn.Module):
     """
     CNN from Ciprijanovic et al. (2020) Astronomy and Computing, 32, 100390
     """
@@ -54,7 +54,7 @@ class DeepMergeClassifier(nn.Module):
             Number of classes to classify the encoded array into.
         """
 
-        super(DeepMergeClassifier, self).__init__()
+        super(Classifier, self).__init__()
 
         self.fc1 = nn.Linear(features_size, 256)
         self.fc2 = nn.Linear(256, 64)

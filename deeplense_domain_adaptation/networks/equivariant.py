@@ -2,7 +2,7 @@ from torch import nn
 from e2cnn import gspaces
 from e2cnn import e2nn
 
-class EquivariantNetworkEncoder(nn.Module):
+class Encoder(nn.Module):
     def __init__(self, features_size=256, sym_group='Dihyderal', N=2):
         """
         Equivariant neural network receives that images and encodes them into an array of size `features_size`.
@@ -19,7 +19,7 @@ class EquivariantNetworkEncoder(nn.Module):
             Number of discrete rotations (integer greater than 1) or -1 for continuous rotations.
         """
 
-        super(EquivariantNetworkEncoder, self).__init__()
+        super(Encoder, self).__init__()
 
         if sym_group == 'Dihyderal':
             self.r2_act = gspaces.FlipRot2dOnR2(N=N)

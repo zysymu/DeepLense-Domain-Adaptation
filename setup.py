@@ -3,12 +3,13 @@ import setuptools
 with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as f:
-    install_requires = f.readlines()
+#with open("requirements.txt", "r") as f:
+#    install_requires = f.readlines()
+#    install_requires = [x.strip() for x in install_requires]
 
 setuptools.setup(
     name="deeplense_domain_adaptation",
-    version="0.0.2",
+    version="0.0.3",
     author="Marcos Tidball",
     author_email="marcostidball@gmail.com",
     description="A PyTorch-based collection of Unsupervised Domain Adaptation methods applied to strong gravitational lenses",
@@ -25,6 +26,13 @@ setuptools.setup(
     ],
     package_dir={"": "deeplense_domain_adaptation"},
     packages=setuptools.find_packages(where="deeplense_domain_adaptation"),
-    install_requires=install_requires,
-    python_requires=">=3.9.5",
+    install_requires=["numpy==1.21.2",
+                      "torch==1.9.0",
+                      "e2cnn==0.1.9",
+                      "torchvision==0.10.0",
+                      "matplotlib==3.4.3",
+                      "sklearn==0.24.2",
+                      "scipy==1.7.1",
+                      "seaborn==0.11.2"],
+    python_requires=">=3.7.10",
 )
