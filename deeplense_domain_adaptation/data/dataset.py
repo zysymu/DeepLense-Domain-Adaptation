@@ -43,7 +43,7 @@ class NumpyDataset(Dataset):
 
         return data, label
 
-def get_dataloader(data_path, labels_path, augmentations, three_channels=False, bs=100, num_workers=2, shuffle=False):
+def get_dataloader(data_path, labels_path, augmentations, bs=100, three_channels=False, num_workers=2, shuffle=False):
     """
     Creates PyTorch DataLoaders that load image NumPy arrays and labels NumPy arrays and applies transforms to them in a memory-efficient manner.
 
@@ -58,11 +58,11 @@ def get_dataloader(data_path, labels_path, augmentations, three_channels=False, 
     transform: Torchvision transforms
         Augmentations to be applied on the data.
 
-    three_channels: bool
-        If True the one-channel image is copied over the other channels, creating a three-channel image.
-
     bs: int
         Batch size for loading the data.
+
+    three_channels: bool
+        If True the one-channel image is copied over the other channels, creating a three-channel image.
 
     num_workers: int
         Number of workers to be used (a number too high may slow down loading).

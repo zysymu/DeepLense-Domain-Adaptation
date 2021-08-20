@@ -201,14 +201,14 @@ class Supervised(object):
         # plot metrics from source
         fig, axs = plt.subplots(1, 2, figsize=(12,5), dpi=200)
 
-        epochs = len(self.history_source['loss'])
+        epochs = len(self.history['loss'])
 
-        axs[0].plot(range(1, epochs+1), self.history_source['loss'])
+        axs[0].plot(range(1, epochs+1), self.history['loss'])
         axs[0].set_xlabel('Epochs')
         axs[0].set_ylabel('Loss')
         axs[0].set_title('Source loss')
 
-        axs[1].plot(range(1, epochs+1), self.history_source['accuracy'])
+        axs[1].plot(range(1, epochs+1), self.history['accuracy'])
         axs[1].set_xlabel('Epochs')
         axs[1].set_ylabel('Accuracy')
         axs[1].set_title('Source accuracy')
