@@ -1,4 +1,4 @@
-from supervised import Supervised
+from .supervised import Supervised
 import torch
 from torch import nn
 import torch.nn.functional as F
