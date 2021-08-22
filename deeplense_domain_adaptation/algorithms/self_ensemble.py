@@ -25,18 +25,9 @@ class SelfEnsemble(Supervised):
 
         super().__init__(encoder, classifier)
 
+        # we consider the teacher encoder and the teacher classifier as our model
         self.student_encoder = self.encoder
         self.student_classifier = self.classifier
-
-        # we consider the teacher encoder and the teacher classifier as our model
-        #self.teacher_encoder = self.encoder
-        #self.teacher_classifier = self.classifier
-
-        # disable grad in teacher network
-        #for param in self.encoder.parameters():
-        #    param.requires_grad = False
-        #for param in self.classifier.parameters():
-        #    param.requires_grad = False
 
     def train(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path, n_classes=3):
         """
@@ -88,7 +79,6 @@ class SelfEnsemble(Supervised):
 
         # configure optimizers and schedulers
         student_optimizer = optim.Adam(list(self.student_encoder.parameters()) + list(self.student_classifier.parameters()), lr=lr_student, weight_decay=wd)
-        #teacher_optimizer = EMA(list(self.student_encoder.parameters()) + list(self.student_classifier.parameters()), list(self.encoder.parameters()) + list(self.classifier.parameters()))
         teacher_optimizer = self._EMA(self.student_encoder, self.student_classifier, self.encoder, self.classifier)
         if cyclic_scheduler:
             scheduler = optim.lr_scheduler.OneCycleLR(student_optimizer, lr_student, epochs=epochs, steps_per_epoch=iters)
@@ -102,9 +92,7 @@ class SelfEnsemble(Supervised):
         self.history = {'supervised_loss': [],
                         'unsupervised_loss': [],
                         'unsupervised_mask_count': [],
-                        #'student_accuracy_source': [],
                         'teacher_accuracy_source': [],
-                        #'student_accuracy_target': [],
                         'teacher_accuracy_target': []
                         }
 
@@ -169,40 +157,29 @@ class SelfEnsemble(Supervised):
             self.history['unsupervised_mask_count'].append(epoch_unsupervised_mask_count)
 
             # self.evaluate on training data
-            #student_accuracy_source = self.evaluate(source_dataloader)
             teacher_accuracy_source = self.evaluate(source_dataloader)
-            
-            #student_accuracy_target = self.evaluate(target_dataloader_test)
-            teacher_accuracy_target = self.evaluate(target_dataloader_test)        
+            teacher_accuracy_target = self.evaluate(target_dataloader_teacher)
+            test_epoch_accuracy = self.evaluate(target_dataloader_test)
 
-            #self.history['student_accuracy_source'].append(student_accuracy_source)
             self.history['teacher_accuracy_source'].append(teacher_accuracy_source)
-            #self.history['student_accuracy_target'].append(student_accuracy_target)
             self.history['teacher_accuracy_target'].append(teacher_accuracy_target)
             
-            # save checkpoint
-            #if student_accuracy_target > teacher_accuracy_target:
-            #    curr_acc = student_accuracy_target
-            #else:
-            #    curr_acc = teacher_accuracy_target
-            
             #if curr_acc > best_acc:
-            if teacher_accuracy_target > best_acc:
+            if test_epoch_accuracy > best_acc:
                 torch.save({'student_encoder_weights': self.student_encoder.state_dict(),
                             'student_classifier_weights': self.student_classifier.state_dict(),
                             'encoder_weights': self.encoder.state_dict(),
                             'classifier_weights': self.classifier.state_dict(),
                         }, save_path)
                 #best_acc = curr_acc
-                best_acc = teacher_accuracy_target
+                best_acc = test_epoch_accuracy
                 bad_epochs = 0
             
             else:
                 bad_epochs += 1
 
             print('[Epoch {}/{}] supervised loss: {:.6f}; unsupervised loss: {:.6f}; unsupervised mask count: {:.6f};'.format(epoch+1, epochs, epoch_supervised_loss, epoch_unsupervised_loss, epoch_unsupervised_mask_count))
-            #print('[Epoch {}/{}] student accuracy source: {:.6f}; teacher accuracy source: {:.6f}; student accuracy target: {:.6f}; teacher accuracy target: {:.6f};'.format(epoch+1, epochs, student_accuracy_source, teacher_accuracy_source, student_accuracy_target, teacher_accuracy_target))
-            print('[Epoch {}/{}] teacher accuracy source: {:.6f}; teacher accuracy target: {:.6f};'.format(epoch+1, epochs, teacher_accuracy_source, teacher_accuracy_target))
+            print('[Epoch {}/{}] teacher accuracy source: {:.6f}; teacher accuracy target: {:.6f}; val accuracy: {:.6f};'.format(epoch+1, epochs, teacher_accuracy_source, teacher_accuracy_target, test_epoch_accuracy))
             
             if bad_epochs >= patience:
                 print(f"reached {bad_epochs} bad epochs, stopping training with best val accuracy of {best_acc}!")
@@ -245,26 +222,15 @@ class SelfEnsemble(Supervised):
 
         fig, axs = plt.subplots(1, 2, figsize=(12,5), dpi=200)
 
-        #axs[0].plot(range(1, epochs+1), self.history['student_accuracy_source'], label='Student')
-        #axs[0].set_xlabel('Epochs')
-        #axs[0].set_ylabel('Accuracy')
-
         axs[0].plot(range(1, epochs+1), self.history['teacher_accuracy_source'], label='Teacher')
         axs[0].set_xlabel('Epochs')
         axs[0].set_ylabel('Accuracy')
         axs[0].set_title('Accuracy on source')
 
-        #axs[1].plot(range(1, epochs+1), self.history['student_accuracy_target'], label='Student')
-        #axs[1].set_xlabel('Epochs')
-        #axs[1].set_ylabel('Accuracy')
-
         axs[1].plot(range(1, epochs+1), self.history['teacher_accuracy_target'], label='Teacher')
         axs[1].set_xlabel('Epochs')
         axs[1].set_ylabel('Accuracy')
         axs[1].set_title('Accuracy on target')
-
-        #axs[0].legend()
-        #axs[1].legend()
 
         plt.show()
 
