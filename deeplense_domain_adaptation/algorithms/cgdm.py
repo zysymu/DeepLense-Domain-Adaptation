@@ -15,21 +15,30 @@ class Cgdm(Supervised):
     Authors: Zhekai Du, Jingjing Li, Hongzu Su, Lei Zhu, Ke Lu
     """
 
-    def __init__(self, encoder, classifier):
+    def __init__(self, encoder, classifier1, classifier2):
         """
+        Here, `classifier1` and `classifier2` are the bi-classifiers.
+        They can have different parameters, but must have the same architecture.
+
         Arguments:
         ----------
         encoder: PyTorch neural network
             Neural network that receives images and encodes them into an array of size X.
 
-        classifier: PyTorch neural network
+        classifier1: PyTorch neural network
             Neural network that receives an array of size X and classifies it into N classes.
+            If using transfer learning from the source, this should be the source classifier.
+
+        classifier2: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+            If using transfer learning from the source, this should ALSO be the source classifier.
         """
 
-        super().__init__(encoder, classifier)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.encoder = encoder.to(self.device)
 
-        self.classifier1 = self.classifier
-        self.classifier2 = self.classifier
+        self.classifier1 = classifier1.to(self.device)
+        self.classifier2 = classifier2.to(self.device)
 
     def train(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path):
         """
@@ -199,8 +208,9 @@ class Cgdm(Supervised):
                 running_loss_discrepancy += discrepancy_loss.item()
                 
                 # scheduler
-                scheduler_encoder.step()
-                scheduler_classifiers.step()
+                if cyclic_scheduler:
+                    scheduler_encoder.step()
+                    scheduler_classifiers.step()
 
             # get losses
             epoch_loss_entropy = running_loss_entropy / iters

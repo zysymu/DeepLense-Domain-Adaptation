@@ -2,7 +2,7 @@ from .supervised import Supervised
 import torch
 from torch import nn
 import torch.optim as optim
-#from torch.autograd import Variable
+from torch.autograd import Variable
 import matplotlib.pyplot as plt
 
 class Adda(Supervised):
@@ -11,12 +11,17 @@ class Adda(Supervised):
     Authors: Eric Tzeng, Judy Hoffman, Kate Saenko, Trevor Darrell
     """
 
-    def __init__(self, encoder, classifier, discriminator):
+    def __init__(self, source_encoder, target_encoder, classifier, discriminator):
         """
         Arguments:
         ----------
-        encoder: PyTorch neural network
+        source_encoder: PyTorch neural network
             Neural network that receives images and encodes them into an array of size X.
+            Must have been previously trained in a supervised manner on the source dataset.
+
+        target_encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+            Must have the same architecture as `source_encoder`.
 
         classifier: PyTorch neural network
             Neural network that receives an array of size X and classifies it into N classes.
@@ -26,13 +31,13 @@ class Adda(Supervised):
             It discriminates between encodings of the source domain and the target domain.
         """
 
-        super().__init__(encoder, classifier)
+        super().__init__(target_encoder, classifier)
 
         self.discriminator = discriminator.to(self.device)
 
         # we consider self.encoder = target_encoder
-        self.source_encoder = self.encoder
-        self.source_encoder.load_state_dict(self.encoder.state_dict())
+        self.source_encoder = source_encoder.to(self.device)
+        self.encoder.load_state_dict(self.source_encoder.state_dict())
 
         # disbale grad in already trained networks
         for param in self.source_encoder.parameters():
@@ -83,10 +88,10 @@ class Adda(Supervised):
         
         iters = max(len(source_dataloader), len(target_dataloader))
         
-        # configure optimizers and schedulers
         self.source_encoder.eval()
         self.classifier.eval()
         
+        # configure optimizers and schedulers
         optimizer_target = optim.Adam(self.encoder.parameters(), lr=lr_target, weight_decay=wd)
         optimizer_discriminator = optim.Adam(self.discriminator.parameters(), lr=lr_discriminator, weight_decay=wd)
 
@@ -104,12 +109,12 @@ class Adda(Supervised):
 
         # training loop
         for epoch in range(start_epoch, epochs):
-            # set network to training mode
-            self.encoder.train()
-            self.discriminator.train()
-
             running_loss_discriminator = 0.0
             running_loss_target = 0.0
+            
+            # set network to training mode
+            self.discriminator.train()
+            self.encoder.train()
 
             # this is where the unsupervised learning comes in, as such, we're not interested in labels
             for (data_source, _), (data_target, _) in zip(source_dataloader, target_dataloader):
@@ -129,10 +134,8 @@ class Adda(Supervised):
                 features_target = self.encoder(data_target)
 
                 ## generate real and fake labels for self.discriminator
-                #label_source = Variable(torch.zeros(batch_size_source, dtype=torch.long)).to(self.device)
-                label_source = torch.tensor([0] * batch_size_source, dtype=torch.long).to(self.device)
-                #label_target = Variable(torch.ones(batch_size_target, dtype=torch.long)).to(self.device)
-                label_target = torch.tensor([1] * batch_size_target, dtype=torch.long).to(self.device)
+                label_source = Variable(torch.zeros(batch_size_source, dtype=torch.long)).to(self.device)
+                label_target = Variable(torch.ones(batch_size_target, dtype=torch.long)).to(self.device)
                 label_concat = torch.cat([label_source, label_target], dim=0)
 
                 ## classify with self.discriminator
@@ -159,8 +162,7 @@ class Adda(Supervised):
                 outputs_target = self.discriminator(features_target)
 
                 ## get loss for target encoder
-                #label_target = Variable(torch.zeros(batch_size_target, dtype=torch.long)).to(self.device)
-                label_target = torch.tensor([0] * batch_size_target, dtype=torch.long).to(self.device)
+                label_target = Variable(torch.zeros(batch_size_target, dtype=torch.long)).to(self.device)
                 loss_encoder = criterion(outputs_target, label_target)
                 
                 ## backpropagate and update weights
@@ -173,8 +175,8 @@ class Adda(Supervised):
                 
                 # scheduler step
                 if cyclic_scheduler:
-                    scheduler_target.step()
                     scheduler_discriminator.step()
+                    scheduler_target.step()
 
             # get losses
             epoch_loss_discriminator = running_loss_discriminator / iters

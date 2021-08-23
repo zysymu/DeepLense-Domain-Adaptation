@@ -12,22 +12,41 @@ class SelfEnsemble(Supervised):
     Authors: Geoffrey French, Michal Mackiewicz, Mark Fisher
     """
 
-    def __init__(self, encoder, classifier):
+    def __init__(self, student_encoder, student_classifier, teacher_encoder, teacher_classifier):
         """
         Arguments:
         ----------
-        encoder: PyTorch neural network
+        student_encoder: PyTorch neural network
             Neural network that receives images and encodes them into an array of size X.
+            If using transfer learning from the source, this should be the source encoder.
 
-        classifier: PyTorch neural network
+        student_classifier: PyTorch neural network
             Neural network that receives an array of size X and classifies it into N classes.
+            If using transfer learning from the source, this should be the source classifier.
+
+        teacher_encoder: PyTorch neural network
+            Neural network that receives images and encodes them into an array of size X.
+            Must have the same architecture as `student_encoder`.
+
+        teacher_classifier: PyTorch neural network
+            Neural network that receives an array of size X and classifies it into N classes.
+            Must have the same architecture as `student_classifier`.
         """
 
-        super().__init__(encoder, classifier)
+        super().__init__(teacher_encoder, teacher_classifier)
 
-        # we consider the teacher encoder and the teacher classifier as our model
-        self.student_encoder = self.encoder
-        self.student_classifier = self.classifier
+        # we consider the self.encoder = teacher_encoder and self.classifier = teacher_classifier as our model
+        self.student_encoder = student_encoder.to(self.device)
+        self.student_classifier = student_classifier.to(self.device)
+
+        self.encoder.load_state_dict(self.student_encoder.state_dict())
+        self.classifier.load_state_dict(self.student_classifier.state_dict())
+
+        # disable grad in teacher network
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        for param in self.classifier.parameters():
+            param.requires_grad = False
 
     def train(self, source_dataloader, target_dataloader, target_dataloader_test, epochs, hyperparams, save_path, n_classes=3):
         """
@@ -164,14 +183,12 @@ class SelfEnsemble(Supervised):
             self.history['teacher_accuracy_source'].append(teacher_accuracy_source)
             self.history['teacher_accuracy_target'].append(teacher_accuracy_target)
             
-            #if curr_acc > best_acc:
             if test_epoch_accuracy > best_acc:
-                torch.save({'student_encoder_weights': self.student_encoder.state_dict(),
-                            'student_classifier_weights': self.student_classifier.state_dict(),
+                torch.save({#'student_encoder_weights': self.student_encoder.state_dict(),
+                            #'student_classifier_weights': self.student_classifier.state_dict(),
                             'encoder_weights': self.encoder.state_dict(),
                             'classifier_weights': self.classifier.state_dict(),
                         }, save_path)
-                #best_acc = curr_acc
                 best_acc = test_epoch_accuracy
                 bad_epochs = 0
             
@@ -186,8 +203,8 @@ class SelfEnsemble(Supervised):
                 break
                 
         best = torch.load(save_path)
-        self.student_encoder.load_state_dict(best["student_encoder_weights"])
-        self.student_classifier.load_state_dict(best["student_classifier_weights"])
+        #self.student_encoder.load_state_dict(best["student_encoder_weights"])
+        #self.student_classifier.load_state_dict(best["student_classifier_weights"])
         self.encoder.load_state_dict(best["encoder_weights"])
         self.classifier.load_state_dict(best["classifier_weights"])
 
