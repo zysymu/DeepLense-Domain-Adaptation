@@ -30,7 +30,7 @@ The data loading pipeline implemented here expects the image data to be in the f
 The dataset used for training and inference will be made available as soon as possible!
 
 # Tutorial
-For a tutorial on how to use the `deeplense_domain_adaptation` package check out the tutorial available ate `tutorial.ipynb`. For a more user friendly experience, you can also check the Jupyter Notebook on nbviewer [here](https://nbviewer.jupyter.org/github/ML4SCI/DeepLense/blob/main/Domain_Adaptation_for_DeepLense_Marcos_Tidball/tutorial.ipynb).
+For a tutorial on how to use the `deeplense_domain_adaptation` package check out the tutorial available ate `tutorial.ipynb`. For a more user friendly experience, you can also check the Jupyter Notebook on nbviewer [here](https://nbviewer.jupyter.org/github/zysymu/DeepLense-Domain-Adaptation/blob/main/tutorial.ipynb).
 
 # Current results (ResNet18 model)
 Training on source and testing on target:
