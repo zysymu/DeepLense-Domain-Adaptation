@@ -295,7 +295,7 @@ class Cgdm(Supervised):
                 outputs1 = self.classifier1(features)
                 outputs2 = self.classifier2(features)
                 
-                outputs = F.softmax((outputs1 + outputs2)/2, dim=1)
+                outputs = F.softmax(outputs1 + outputs2, dim=1)
 
                 # numpify
                 labels_numpy = labels.detach().cpu().numpy()

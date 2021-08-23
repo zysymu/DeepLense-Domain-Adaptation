@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name = 'deeplense_domain_adaptation',
-    version = '0.0.9',
+    version = '0.1.0',
     license='MIT',
     description = 'A PyTorch-based collection of Unsupervised Domain Adaptation methods applied to strong gravitational lenses',
     long_description=long_description,
