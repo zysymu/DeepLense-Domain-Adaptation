@@ -25,7 +25,7 @@ setup(
         'torch==1.7.1',
         'torchvision==0.8.2',
         'e2cnn==0.1.7',
-        'geffnet==1.0.2'
+        'geffnet==1.0.2',
         'matplotlib==3.4.3',
         'scikit-learn==0.24.2',
         'scipy==1.7.1',
