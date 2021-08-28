@@ -152,7 +152,7 @@ def adamatch_augmentations():
     train_transform_source_strong = transforms.Compose([transforms.Resize(150),
                                                         transforms.RandomHorizontalFlip(),
                                                         transforms.RandomVerticalFlip(),
-                                                        transforms.RandomInvert(),
+                                                        #transforms.RandomInvert(),
                                                         transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
                                                         transforms.RandomErasing(),
                                                         ])
@@ -160,7 +160,7 @@ def adamatch_augmentations():
     train_transform_target_strong = transforms.Compose([transforms.Resize(150),
                                                         transforms.RandomHorizontalFlip(),
                                                         transforms.RandomVerticalFlip(),
-                                                        transforms.RandomInvert(),
+                                                        #transforms.RandomInvert(),
                                                         transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
                                                         transforms.RandomErasing(),
                                                         ])
