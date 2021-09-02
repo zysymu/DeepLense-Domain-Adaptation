@@ -192,7 +192,8 @@ class Adda(Supervised):
             # save checkpoint
             if test_epoch_accuracy > best_acc:
                 torch.save({'encoder_weights': self.encoder.state_dict(),
-                            'classifier_weights': self.classifier.state_dict()
+                            'classifier_weights': self.classifier.state_dict(),
+                            'discriminator_weights': self.discriminator.state_dict()
                         }, save_path)
                 best_acc = test_epoch_accuracy
                 bad_epochs = 0
