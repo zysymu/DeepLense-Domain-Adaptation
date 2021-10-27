@@ -215,7 +215,7 @@ class Supervised(object):
 
         plt.show()
 
-    def plot_cm_roc(self, dataloader, n_classes=3):
+    def plot_cm_roc(self, dataloader, output_path=None, n_classes=3):
         """
         Plots the confusion matrix and ROC curves of the model on `dataloader`.
 
@@ -226,6 +226,10 @@ class Supervised(object):
 
         n_classes: int
             Number of classes.
+
+        output_path: str
+            Output path to .npz (NumPy) file containing the true positive rate, false positive rate
+            and AUROC.
         """
 
         cmap = sns.diverging_palette(220, 20, as_cmap=True)
@@ -240,7 +244,7 @@ class Supervised(object):
         group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
         group_percentages = ['({0:.2%})'.format(value) for value in cm.flatten()/np.sum(cm)]
         labels = [f'{v1}\n{v2}' for v1, v2 in zip(group_counts, group_percentages)]
-        labels = np.asarray(labels).reshape(3,3)
+        labels = np.asarray(labels).reshape(n_classes,n_classes)
         #tn, fp, fn, tp = cm.ravel()
 
         plt.figure(figsize=(4,4), dpi=200)
@@ -265,6 +269,9 @@ class Supervised(object):
         for i in range(n_classes):
             fpr[i], tpr[i], _ = sklearn.metrics.roc_curve(onehot[:, i], outputs_list[:, i])
             roc_auc[i] = sklearn.metrics.auc(fpr[i], tpr[i])
+
+        if output_path != None:
+            np.savez(output_path, fpr=fpr, tpr=tpr, roc_auc=roc_auc)
 
         ## get macro average auroc
         all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))

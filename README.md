@@ -34,7 +34,7 @@ The paper's Model A is our source dataset (less complex simulations) and the pap
 # How to use `deeplense_domain_adaptation`
 For a tutorial on how to use the `deeplense_domain_adaptation` package check out `tutorial.ipynb`. If the file isn't loading properly on GitHub you can also check the Jupyter Notebook on nbviewer [here](https://nbviewer.jupyter.org/github/zysymu/DeepLense-Domain-Adaptation/blob/main/tutorial.ipynb). For more information on specific functions/classes check out the documentation available on the functions/classes definitions.
 
-# Current results (ResNet18 model)
+# Current results (Equivariant Network model)
 Training on source and testing on target:
 - Accuracy = 0.6326
 - AUROC = 0.8114

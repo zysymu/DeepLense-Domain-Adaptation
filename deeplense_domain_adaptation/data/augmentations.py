@@ -1,4 +1,5 @@
 from torchvision import transforms
+import random
 
 def supervised_augmentations():
     """
@@ -148,24 +149,37 @@ def adamatch_augmentations():
                                                       transforms.RandomHorizontalFlip(),
                                                       transforms.RandomVerticalFlip(),
                                                       ])
-
+    
     train_transform_source_strong = transforms.Compose([transforms.Resize(150),
                                                         transforms.RandomHorizontalFlip(),
                                                         transforms.RandomVerticalFlip(),
-                                                        #transforms.RandomInvert(),
+                                                        transforms.RandomAutocontrast(),
                                                         transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
-                                                        transforms.RandomErasing(),
+                                                        #transforms.RandomEqualize(), # only on PIL images
+                                                        transforms.RandomInvert(),
+                                                        #transforms.RandomPosterize(random.randint(1, 8)), # only on PIL images
+                                                        transforms.RandomAdjustSharpness(random.uniform(0, 1)),
+                                                        transforms.RandomSolarize(random.uniform(0, 1)),
+                                                        transforms.RandomAffine(45, translate=(0.3, 0.3), scale=(0.8, 1.2), shear=(-0.3, 0.3, -0.3, 0.3)),
+                                                        #transforms.RandomErasing()
                                                         ])
+
 
     train_transform_target_strong = transforms.Compose([transforms.Resize(150),
                                                         transforms.RandomHorizontalFlip(),
                                                         transforms.RandomVerticalFlip(),
-                                                        #transforms.RandomInvert(),
+                                                        transforms.RandomAutocontrast(),
                                                         transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
-                                                        transforms.RandomErasing(),
+                                                        #transforms.RandomEqualize(), # only on PIL images
+                                                        transforms.RandomInvert(),
+                                                        #transforms.RandomPosterize(random.randint(1, 8)), # only on PIL images
+                                                        transforms.RandomAdjustSharpness(random.uniform(0, 1)),
+                                                        transforms.RandomSolarize(random.uniform(0, 1)),
+                                                        transforms.RandomAffine(45, translate=(0.3, 0.3), scale=(0.8, 1.2), shear=(-0.3, 0.3, -0.3, 0.3)),
+                                                        #transforms.RandomErasing()
                                                         ])
 
     test_transform = transforms.Compose([transforms.Resize(150),
-                                        ])
+                                         ])
 
     return train_transform_source_weak, train_transform_target_weak, train_transform_source_strong, train_transform_target_strong, test_transform
