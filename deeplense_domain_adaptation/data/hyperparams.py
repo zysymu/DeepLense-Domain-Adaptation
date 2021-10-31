@@ -60,7 +60,7 @@ def adda_hyperparams(lr_target=1e-5, lr_discriminator=1e-4, wd=1e-5, scheduler=F
 
     return hyperparams
 
-def self_ensemble_hyperparams(lr=1e-4, unsupervised_weight=3.0, wd=1e-5, scheduler=False):
+def self_ensemble_hyperparams(lr=1e-3, unsupervised_weight=3.0, wd=1e-5, scheduler=False):
     """
     Return a dictionary of hyperparameters for the Self-Ensemble algorithm.
     Default parameters are the best ones as found through a hyperparameter search.
@@ -93,7 +93,7 @@ def self_ensemble_hyperparams(lr=1e-4, unsupervised_weight=3.0, wd=1e-5, schedul
 
     return hyperparams
 
-def cgdm_hyperparams(lr=1e-4, num_k=4, pseudo_interval=100, wd=1e-5, scheduler=False):
+def cgdm_hyperparams(lr=1e-3, num_k=4, pseudo_interval=100, wd=1e-5, scheduler=False):
     """
     Return a dictionary of hyperparameters for the CGDM algorithm.
     Default parameters are the best ones as found through a hyperparameter search.
@@ -130,7 +130,7 @@ def cgdm_hyperparams(lr=1e-4, num_k=4, pseudo_interval=100, wd=1e-5, scheduler=F
 
     return hyperparams
 
-def adamatch_hyperparams(lr=1e-4, tau=0.9, wd=1e-5, scheduler=False):
+def adamatch_hyperparams(lr=1e-3, tau=0.9, wd=1e-5, scheduler=False):
     """
     Return a dictionary of hyperparameters for the AdaMatch algorithm.
     Default parameters are the best ones as found through a hyperparameter search.
