@@ -230,12 +230,11 @@ class Supervised(object):
         output_path: str
             Output path to .npz (NumPy) file containing the true positive rate, false positive rate
             and AUROC.
+            To obtain the information, load the .npz file with `allow_picle=True` and select the data
+            of interest with `array['tpr'].item()`, `array['fpr'].item()` or `array['roc_auc'].item()`.
         """
 
         cmap = sns.diverging_palette(220, 20, as_cmap=True)
-
-        self.encoder.eval()
-        self.classifier.eval()
 
         accuracy, labels_list, outputs_list, preds_list = self.evaluate(dataloader, return_lists_roc=True)
 
