@@ -40,6 +40,7 @@ For a tutorial on how to use the `deeplense_domain_adaptation` package check out
 - Supervised training on source infering on **target**: accuracy = 67.5333; AUROC = 0.8558.
 
 - Applying UDA and infering on target:
+
 | Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
 |-----------------------|---------|---------------|---------|----------|
 | Accuracy              | 91.4666 | 80.0933       | 74.8133 | 85.8133  |
@@ -50,6 +51,7 @@ For a tutorial on how to use the `deeplense_domain_adaptation` package check out
 - Supervised training on source infering on **target**: accuracy = 59.1866; AUROC = 0.8797.
 
 - Applying UDA and infering on target:
+
 | Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
 |-----------------------|---------|---------------|---------|----------|
 | Accuracy              | 85.8400 | 76.7066       | 75.1866 | 75.5466  |
