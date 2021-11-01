@@ -36,10 +36,10 @@ For a tutorial on how to use the `deeplense_domain_adaptation` package check out
 
 # Before and after UDA
 ### Equivariant Network model
-- Supervised training on source infering on **source**: accuracy = 96.8400; AUROC = 0.9964.
-- Supervised training on source infering on **target**: accuracy = 67.5333; AUROC = 0.8558.
+- Supervised training on source inferring on **source**: accuracy = 96.8400; AUROC = 0.9964.
+- Supervised training on source inferring on **target**: accuracy = 67.5333; AUROC = 0.8558.
 
-- Applying UDA and infering on target:
+- Applying UDA and inferring on target:
 
 | Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
 |-----------------------|---------|---------------|---------|----------|
@@ -47,10 +47,10 @@ For a tutorial on how to use the `deeplense_domain_adaptation` package check out
 | AUROC (macro-average) | 0.9798  | 0.9391        | 0.8891  | 0.9600   |
 
 ### ResNet-18
-- Supervised training on source infering on **source**: accuracy = 97.0933; AUROC = 0.9959.
-- Supervised training on source infering on **target**: accuracy = 59.1866; AUROC = 0.8797.
+- Supervised training on source inferring on **source**: accuracy = 97.0933; AUROC = 0.9959.
+- Supervised training on source inferring on **target**: accuracy = 59.1866; AUROC = 0.8797.
 
-- Applying UDA and infering on target:
+- Applying UDA and inferring on target:
 
 | Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
 |-----------------------|---------|---------------|---------|----------|
