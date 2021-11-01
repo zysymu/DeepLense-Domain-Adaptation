@@ -34,14 +34,23 @@ The paper's Model A is our source dataset (less complex simulations) and the pap
 # How to use `deeplense_domain_adaptation`
 For a tutorial on how to use the `deeplense_domain_adaptation` package check out `tutorial.ipynb`. If the file isn't loading properly on GitHub you can also check the Jupyter Notebook on nbviewer [here](https://nbviewer.jupyter.org/github/zysymu/DeepLense-Domain-Adaptation/blob/main/tutorial.ipynb). For more information on specific functions/classes check out the documentation available on the functions/classes definitions.
 
-# Current results (Equivariant Network model)
-Training on source and testing on target:
-- Accuracy = 0.6326
-- AUROC = 0.8114
+# Before and after UDA
+### Equivariant Network model
+- Supervised training on source infering on **source**: accuracy = 96.8400; AUROC = 0.9964.
+- Supervised training on source infering on **target**: accuracy = 67.5333; AUROC = 0.8558.
 
-After applying UDA algorithms:
+- Applying UDA and infering on target:
+| Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
+|-----------------------|---------|---------------|---------|----------|
+| Accuracy              | 91.4666 | 80.0933       | 74.8133 | 85.8133  |
+| AUROC (macro-average) | 0.9798  | 0.9391        | 0.8891  | 0.9600   |
 
-| Algorithm |  ADDA  | Self-Ensemble |  CGDM  | AdaMatch |
-|-----------|:------:|:-------------:|:------:|:--------:|
-| Accuracy  | 0.8449 |     0.7480    | 0.7132 |  0.7300  |
-| AUROC     | 0.9442 |     0.8816    | 0.8931 |  0.9179  |
+### ResNet-18
+- Supervised training on source infering on **source**: accuracy = 97.0933; AUROC = 0.9959.
+- Supervised training on source infering on **target**: accuracy = 59.1866; AUROC = 0.8797.
+
+- Applying UDA and infering on target:
+| Algorithm             | Adda    | Self-Ensemble | CGDM    | AdaMatch |
+|-----------------------|---------|---------------|---------|----------|
+| Accuracy              | 85.8400 | 76.7066       | 75.1866 | 75.5466  |
+| AUROC (macro-average) | 0.9552  | 0.9174        | 0.9139  | 0.9195   |
