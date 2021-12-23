@@ -55,69 +55,6 @@ def adda_augmentations():
 
     return train_transform_source, train_transform_target, test_transform
 
-def self_ensemble_augmentations():
-    """
-    Return best augmentations for the Self-Ensemble algorithm.
-
-    Returns:
-    --------
-    train_transform_source: Torchvision transforms
-        Augmentations for the source training set.
-
-    train_transform_target: Torchvision transforms
-        Augmentations for the target training set.
-
-    test_transform: Torchvision transforms
-        Augmentations for the test set.
-    """
-    
-    train_transform_source = transforms.Compose([transforms.Resize(150),
-                                                 transforms.RandomHorizontalFlip(),
-                                                 transforms.RandomVerticalFlip(),
-                                                 transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
-                                                 ])
-
-    train_transform_target = transforms.Compose([transforms.Resize(150),
-                                                 transforms.RandomHorizontalFlip(),
-                                                 transforms.RandomVerticalFlip(),
-                                                 ])
-
-    test_transform = transforms.Compose([transforms.Resize(150),
-                                         ])
-
-    return train_transform_source, train_transform_target, test_transform
-
-def cgdm_augmentations():
-    """
-    Return best augmentations for the CGDM algorithm.
-
-    Returns:
-    --------
-    train_transform_source: Torchvision transforms
-        Augmentations for the source training set.
-
-    train_transform_target: Torchvision transforms
-        Augmentations for the target training set.
-
-    test_transform: Torchvision transforms
-        Augmentations for the test set.
-    """
-    
-    train_transform_source = transforms.Compose([transforms.Resize(150),
-                                                 transforms.RandomHorizontalFlip(),
-                                                 transforms.RandomVerticalFlip(),
-                                                 ])
-
-    train_transform_target = transforms.Compose([transforms.Resize(150),
-                                                 transforms.RandomHorizontalFlip(),
-                                                 transforms.RandomVerticalFlip(),
-                                                 ])
-
-    test_transform = transforms.Compose([transforms.Resize(150),
-                                         ])
-
-    return train_transform_source, train_transform_target, test_transform
-
 def adamatch_augmentations():
     """
     Return best augmentations for the AdaMatch algorithm.
@@ -183,3 +120,35 @@ def adamatch_augmentations():
                                          ])
 
     return train_transform_source_weak, train_transform_target_weak, train_transform_source_strong, train_transform_target_strong, test_transform
+
+def self_ensemble_augmentations():
+    """
+    Return best augmentations for the Self-Ensemble algorithm.
+
+    Returns:
+    --------
+    train_transform_source: Torchvision transforms
+        Augmentations for the source training set.
+
+    train_transform_target: Torchvision transforms
+        Augmentations for the target training set.
+
+    test_transform: Torchvision transforms
+        Augmentations for the test set.
+    """
+    
+    train_transform_source = transforms.Compose([transforms.Resize(150),
+                                                 transforms.RandomHorizontalFlip(),
+                                                 transforms.RandomVerticalFlip(),
+                                                 transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.)),
+                                                 ])
+
+    train_transform_target = transforms.Compose([transforms.Resize(150),
+                                                 transforms.RandomHorizontalFlip(),
+                                                 transforms.RandomVerticalFlip(),
+                                                 ])
+
+    test_transform = transforms.Compose([transforms.Resize(150),
+                                         ])
+
+    return train_transform_source, train_transform_target, test_transform

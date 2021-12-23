@@ -90,6 +90,7 @@ class Cgdm(Supervised):
         pseudo_interval = hyperparams['pseudo_interval']
         
         iters = max(len(source_dataloader), len(target_dataloader))
+        target_iter = iter(target_dataloader)
 
         # configure optimizer and scheduler
         optimizer_encoder = optim.Adam(list(self.encoder.parameters()), lr=lr, weight_decay=wd)
@@ -115,8 +116,11 @@ class Cgdm(Supervised):
             running_loss_discrepancy = 0.0
 
             # this is where the unsupervised learning comes in, as such, we're not interested in labels
-            for i, ((data_source, labels_source), (data_target, _)) in enumerate(zip(source_dataloader, target_dataloader)):
+            for i, ((data_source, labels_source), (_, _)) in enumerate(zip(source_dataloader, target_dataloader)):
                 if epoch > start_epoch and i % pseudo_interval == 0:
+                    self.encoder.eval()
+                    self.classifier1.eval()
+                    self.classifier2.eval()
                     pseudo_labels_target = self._get_pseudo_labels(target_dataloader)
 
                 # set network to training mode
@@ -124,82 +128,106 @@ class Cgdm(Supervised):
                 self.classifier1.train()
                 self.classifier2.train()
 
+                data_target, _, target_indexes = next(target_iter)
+
                 data_source = data_source.to(self.device)
                 labels_source = labels_source.to(self.device)
-
                 data_target = data_target.to(self.device)
-                if epoch > start_epoch:
-                    labels_target = pseudo_labels_target[target_dataloader.batch_size*i : target_dataloader.batch_size*(i+1)]
+
+                if epoch > start_epoch:                    
+                    #_, _, target_indexes = next(target_iter)
+                    #labels_target = pseudo_labels_target[target_dataloader.batch_size*i : target_dataloader.batch_size*(i+1)]
+                    # TODO check the index (it's not from the batch, it's related to the dataset)
+                    labels_target = pseudo_labels_target[target_indexes]
                     labels_target = labels_target.to(self.device)
 
                 # all steps have similar begginings
-                for phase in [1, 2, 3]:
-                    for k in range(num_k): # amount of steps to repeat the self.encoder update
-                        # zero gradients
-                        optimizer_encoder.zero_grad()
-                        optimizer_classifiers.zero_grad()
-                        
-                        # classify the data
-                        features_source = self.encoder(data_source)
-                        features_target = self.encoder(data_target)
+                # phase 1: train networks to minimize loss on source
+                optimizer_encoder.zero_grad()
+                optimizer_classifiers.zero_grad()
+                
+                ## classify the data
+                features_source = self.encoder(data_source)
+                features_target = self.encoder(data_target)
 
-                        outputs1_source = self.classifier1(features_source)
-                        outputs1_target = self.classifier1(features_target)
-                        outputs2_source = self.classifier2(features_source)
-                        outputs2_target = self.classifier2(features_target)
+                outputs1_source = self.classifier1(features_source)
+                outputs1_target = self.classifier1(features_target)
+                outputs2_source = self.classifier2(features_source)
+                outputs2_target = self.classifier2(features_target)
 
-                        # get losses
-                        entropy_loss = self._entropy(outputs1_target) + self._entropy(outputs2_target)
+                ## get losses
+                entropy_loss = self._entropy(outputs1_target) + self._entropy(outputs2_target)
 
-                        loss1 = criterion(outputs1_source, labels_source)
-                        loss2 = criterion(outputs2_source, labels_source)
+                if epoch > start_epoch:
+                    supervised_loss = criterion_weighted(outputs1_target, labels_target) + criterion_weighted(outputs2_target, labels_target)
+                else:
+                    supervised_loss = 0
 
-                        if phase == 1:
-                            # train networks to minimize loss on source
-                            if epoch > start_epoch:
-                                supervised_loss = criterion_weighted(outputs1_target, labels_target) + criterion_weighted(outputs2_target, labels_target)
+                loss1 = criterion(outputs1_source, labels_source)
+                loss2 = criterion(outputs2_source, labels_source)
 
-                            else:
-                                supervised_loss = 0
+                loss = loss1 + loss2 + (0.01 * entropy_loss) + (0.01 * supervised_loss)
 
-                            loss = loss1 + loss2 + (0.01 * entropy_loss) + (0.01 * supervised_loss)
+                ## backpropagate and update weights
+                loss.backward()
+                optimizer_encoder.step()
+                optimizer_classifiers.step()
 
-                            # backpropagate and update weights
-                            loss.backward()
-                            optimizer_encoder.step()
-                            optimizer_classifiers.step()
+                # phase 2: train classifier to maximize cross domain discrepancy loss
+                optimizer_encoder.zero_grad()
+                optimizer_classifiers.zero_grad()
+                
+                ## classify the data
+                features_source = self.encoder(data_source)
+                features_target = self.encoder(data_target)
 
-                            # exit self.encoder loop (num_k)
-                            break
+                outputs1_source = self.classifier1(features_source)
+                outputs1_target = self.classifier1(features_target)
+                outputs2_source = self.classifier2(features_source)
+                outputs2_target = self.classifier2(features_target)
 
-                        elif phase == 2:
-                            # train classifiers to maximize divergence between classifier outputs on target (without labels)
-                            discrepancy_loss = self._discrepancy(outputs1_target, outputs2_target)
-                            loss = loss1 + loss2 - (1.0 * discrepancy_loss) + (0.01 * entropy_loss) 
-                            
-                            # backpropagate and update weights
-                            loss.backward()
-                            optimizer_classifiers.step()
+                entropy_loss = self._entropy(outputs1_target) + self._entropy(outputs2_target)
 
-                            # exit self.encoder loop (num_k)
-                            break
+                loss1 = criterion(outputs1_source, labels_source)
+                loss2 = criterion(outputs2_source, labels_source)
 
-                        elif phase == 3:
-                            # train self.encoder to minimize divergence between classifier outputs with gradient similarity
-                            discrepancy_loss = self._discrepancy(outputs1_target, outputs2_target)
+                discrepancy_loss = self._discrepancy(outputs1_target, outputs2_target)
+                loss = loss1 + loss2 - (1.0 * discrepancy_loss) + (0.01 * entropy_loss) 
+                
+                ## backpropagate and update weights
+                loss.backward()
+                optimizer_classifiers.step()
 
-                            if epoch > start_epoch:
-                                source_pack = (outputs1_source, outputs2_source, labels_source)
-                                target_pack = (outputs1_target, outputs2_target, labels_target)
-                                gradient_discrepancy_loss = self._gradient_discrepancy(source_pack, target_pack)
-                            else:
-                                gradient_discrepancy_loss = 0
+                # phase 3: train encoder to minimize cross domain discrepancy loss
+                for k in range(num_k):
+                    optimizer_encoder.zero_grad()
+                    optimizer_classifiers.zero_grad()
+                    
+                    ## classify the data
+                    features_source = self.encoder(data_source)
+                    features_target = self.encoder(data_target)
 
-                            loss = (1.0 * discrepancy_loss) + (0.01 * entropy_loss) + (0.01 * gradient_discrepancy_loss)
+                    outputs1_source = self.classifier1(features_source)
+                    outputs1_target = self.classifier1(features_target)
+                    outputs2_source = self.classifier2(features_source)
+                    outputs2_target = self.classifier2(features_target)
 
-                            # backpropagate and update weights
-                            loss.backward()
-                            optimizer_encoder.step()
+                    entropy_loss = self._entropy(outputs1_target) + self._entropy(outputs2_target)
+
+                    discrepancy_loss = self._discrepancy(outputs1_target, outputs2_target)
+
+                    if epoch > start_epoch:
+                        source_pack = (outputs1_source, outputs2_source, labels_source)
+                        target_pack = (outputs1_target, outputs2_target, labels_target)
+                        gradient_discrepancy_loss = self._gradient_discrepancy(source_pack, target_pack)
+                    else:
+                        gradient_discrepancy_loss = 0
+
+                    loss = (1.0 * discrepancy_loss) + (0.01 * entropy_loss) + (0.01 * gradient_discrepancy_loss)
+
+                    ## backpropagate and update weights
+                    loss.backward()
+                    optimizer_encoder.step()                            
 
                 # metrics
                 running_loss_entropy += entropy_loss.item()
@@ -375,17 +403,17 @@ class Cgdm(Supervised):
         return torch.mean(weight * F.cross_entropy(input, target, reduction='none'))
 
     @staticmethod
-    def _entropy(input, epsilon=1e-5):
+    def _entropy(output, epsilon=1e-5):
         # apply softmax
-        input = F.softmax(input, dim=1)
+        output = F.softmax(output, dim=1)
         
         # entropy_condition
-        entropy_condition = -input * torch.log(input + epsilon)
+        entropy_condition = -output * torch.log(output + epsilon)
         entropy_condition = torch.sum(entropy_condition, dim=1).mean()
         
         # entropy_div
-        input = torch.mean(input, 0) + epsilon
-        entropy_div = input * torch.log(input)
+        output = torch.mean(output, 0) + epsilon
+        entropy_div = output * torch.log(output)
         entropy_div = torch.sum(entropy_div)
 
         return entropy_condition + entropy_div
@@ -475,13 +503,17 @@ class Cgdm(Supervised):
 
         # perform k-means clustering
         k = all_outputs.size(1)
+        aff = all_outputs.float().cpu().numpy()            
+        initial_centroid = aff.transpose().dot(all_features)
+        initial_centroid = initial_centroid / (1e-8 + aff.sum(axis=0)[:,None])
+        distance = cdist(all_features, initial_centroid, 'cosine')
 
-        for i in range(2):
-            if i == 0:
-                aff = all_outputs.float().cpu().numpy()
-            else:
-                aff = np.eye(k)[preds_label]
-            
+        preds_label = distance.argmin(axis=1)
+        accuracy_kmeans = np.sum(preds_label == all_labels.float().cpu().numpy()) / len(all_features)
+
+        # again (?)
+        for round in range(1):
+            aff = np.eye(k)[preds_label]
             initial_centroid = aff.transpose().dot(all_features)
             initial_centroid = initial_centroid / (1e-8 + aff.sum(axis=0)[:,None])
             distance = cdist(all_features, initial_centroid, 'cosine')
@@ -489,5 +521,7 @@ class Cgdm(Supervised):
             preds_label = distance.argmin(axis=1)
             accuracy_kmeans = np.sum(preds_label == all_labels.float().cpu().numpy()) / len(all_features)
 
+
         print('only source accuracy = {:.2f}% -> after clustering = {:.2f}%'.format(accuracy*100, accuracy_kmeans*100))
-        return torch.tensor(preds_label, dtype=torch.long)
+        #return torch.tensor(preds_label, dtype=torch.long)
+        return torch.from_numpy(preds_label).to(self.device)
